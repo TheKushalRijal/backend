@@ -20,4 +20,5 @@ from django.urls import path,include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('backend/',include('backend.urls')),
+    #path('', home),  # This maps the root URL to the home function
 ]

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Permission</title>
+</head>
+<body>
+    <button onclick="getLocation()">Allow Location</button>
+    <p id="status"></p>
+    <p id="address"></p>
+    <div id="output"></div>  <!-- Added div for output -->
+    <script>
+        const API_KEY = "YOUR_GOOGLE_MAPS_API_KEY"; // Replace with your API key
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition);
+            } else {
+                document.getElementById("status").innerHTML = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function showPosition(position) {
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+            document.getElementById("status").innerHTML = `Latitude: ${lat}<br>Longitude: ${lon}`;
+
+            // Call geocode.maps.co API
+            let geocodeUrl = `https://geocode.maps.co/reverse?lat=${lat}&lon=${lon}&api_key=67c69ac7bd35e262077817lxz49aa77`;
+
+            fetch(geocodeUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);  // Log the data to ensure the structure is correct
+
+                    // Display the raw data on the page
+                    document.getElementById("output").innerHTML = JSON.stringify(data, null, 2);
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,8 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import User  # Django's built-in User model
+
+
 
 class Store(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="Store", null = True)
+
     api_key = models.CharField(max_length=255, unique=True)  # Unique API key per store
     location = models.CharField(max_length=255)
     store_name = models.CharField(max_length=255)
@@ -14,6 +19,8 @@ class Store(models.Model):
 class Item(models.Model):
     name = models.CharField(max_length=255,blank = True)  # Consider removing if title is enough
     title = models.CharField(max_length=255, null=True, blank=True)
+    Store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True)
+    title = models.CharField(max_length=255,null=True)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, blank=True)
     sku = models.CharField(max_length=50, null=True, unique=True)
@@ -29,6 +36,8 @@ class UserLocation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,blank=True,null=True)  # Track which user saved this location
     location = models.CharField(max_length=255)
     timestamp = models.DateTimeField(auto_now_add=True)
+    rating = models.FloatField(default=0.0)
+    stock_count = models.DecimalField(null=True, max_digits=500, decimal_places=2)
 
     def __str__(self):
         return f"{self.user.username} - {self.location}"

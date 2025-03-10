@@ -26,8 +26,13 @@ SECRET_KEY = 'django-insecure-r(i0subl9f(!=i+%_l8i6^3r28h)t!qilu&peq!0v2a&p+1m0y
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['44.201.159.116', 'https://machinerank.co', 'localhost','127.0.0.1','98.81.200.11']
-
+ALLOWED_HOSTS = [
+    '44.201.159.116',    # Public IP of your backend server (if needed)
+    'machinerank.co',     # Domain name of your production website
+    'www.machinerank.co', # Optional: if you have a "www" subdomain
+    'localhost',          # Local development on your machine
+    '127.0.0.1',          # Localhost IP address
+]
 
 
 

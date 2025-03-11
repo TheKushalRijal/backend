@@ -2,15 +2,14 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User  # Django's built-in User model
-
+#from views import userlocations
 
 
 class Store(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="Store", null = True)
-
-    api_key = models.CharField(max_length=255, unique=True)  # Unique API key per store
-    location = models.CharField(max_length=255)
-    store_name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255, null=True)  # Changed 'Address' to 'address' for consistency with naming conventions
+    latitude = models.FloatField(default=0.0)  # Changed from CharField to FloatField for proper handling of latitude values
+    longitude = models.FloatField(default=0.0)  # Changed from CharField to FloatField for proper handling of longitude values
+    store_name = models.CharField(max_length=255, null=True)  # 'store_name' is more descriptive than just 'name'
 
     def __str__(self):
         return self.store_name
@@ -33,17 +32,16 @@ class Item(models.Model):
 
 
 class UserLocation(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,blank=True,null=True)  # Track which user saved this location
-    location = models.CharField(max_length=255)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    rating = models.FloatField(default=0.0)
-    stock_count = models.DecimalField(null=True, max_digits=500, decimal_places=2)
+    location = models.CharField(max_length=255)  # User's location
+    postal_code = models.CharField(max_length=10, null=True, blank=True)
+    latitude = models.CharField(max_length=30, default='0.0')
+    longitude = models.CharField(max_length=30, default='0.0') # Use CharField for flexibility
+    timestamp = models.DateTimeField(auto_now_add=True)  # Track when the location was saved
 
     def __str__(self):
         return f"{self.user.username} - {self.location}"
-    
-class Token(models.Model):  # Renaming the class to Token
-    usertokens = models.CharField(null=False, max_length=100)
+   
+
 
 
 class ExcelFile(models.Model):
@@ -59,3 +57,6 @@ class Product(models.Model):
     rating = models.FloatField(default=0.0, validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],null = True)
     def __str__(self):
         return self.name
+    
+class finaltokens(models.Model):
+    token = models.CharField(max_length=100)

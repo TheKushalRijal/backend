@@ -27,13 +27,14 @@ DEBUG = True
 
 
 ALLOWED_HOSTS = [
-    '44.201.159.116',    # Public IP of your backend server (if needed)
+    '44.201.159.116',    # Public IP of your backend server
     'machinerank.co',     # Domain name of your production website
     'www.machinerank.co', # Optional: if you have a "www" subdomain
     'localhost',          # Local development on your machine
-    '127.0.0.1',          # Localhost IP address
+    '127.0.0.1',
+    'api.machinerank.co',
+    'localhost:5173',     # Specify the port with localhost if necessary
 ]
-
 
 
 
@@ -134,12 +135,14 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'backend/static'),  # Add the static folder for your app
 ]
-CORS_ALLOW_ALL_ORIGINS = True  # Allows requests from any origin (for development)
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
 
 
 MEDIA_URL = '/media/'

@@ -1,17 +1,19 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
-from .models import Item, UserLocation, Token,Product
-from .serializers import ItemSerializer,ProductSerializer
+from .models import Item, UserLocation, Product,finaltokens,Store
+from .serializers import ItemSerializer, ProductSerializer
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render,get_object_or_404
+from django.shortcuts import render, get_object_or_404
 import pandas as pd
 import os
 from django.conf import settings
+from django.contrib.auth.models import User
+import math
 
 
-
+# ItemViewSet remains unchanged
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()  # Define the queryset explicitly
     serializer_class = ItemSerializer
@@ -64,109 +66,61 @@ class ItemViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-
-#@api_view(['POST'])
-def userlocations(request):
-    # Get location and address from request body
-    userAddress = request.data.get("userAddress", None)
-    userPostalCode = request.data.get("userPostalCode", None)
-
-    if not userAddress or not userPostalCode:
-        return Response({"error": "Address and Postal Code are required"}, status=400)
-
-    # Save location to the database
-    user_location = UserLocation.objects.create(
-        location=userAddress,
-        postal_code=userPostalCode
-    )
+# Updated tokens view to handle both location and token
+@api_view(['POST'])
+def location(request):
+    location = request.data.get('location', None)
+    postal_code = request.data.get('postal_code', None)
+    longitude = request.data.get("longitude",None)
+    latitude = request.data.get("latitude",None)
+    if not location or not postal_code:
+        return Response({"error": "Location and postal code are required"}, status=400)
     
-    return Response({"message": "Location saved successfully", "location": user_location.location})
+    try:
+        # Assuming the user is authenticated and available in the request
+        user = request.user
+        if not user.is_authenticated:
+            return Response({"error": "User not authenticated"}, status=401)
+        
+        # Save the location to the UserLocation model
+        user_location = UserLocation.objects.create(
+            user=user.username,  # Store the username (or use user.id)
+            location=location,
+            postal_code=postal_code,
+        )
+        
+        return Response({
+            "message": "Location saved successfully",
+            "location": location,
+            "postal_code": postal_code
+        })
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
 
 
-
-
-def page(request):
-    return render(request,"index.html")
-
-
-
-
-#@api_view(['GET'])
-def itemname(request):
-    item_name = request.GET.get("item_name", None)  # Retrieve item_name from GET request
-
-    if not item_name:
-        return Response({"error": "Item name is required"}, status=400)
-
-    items = Product.objects.filter(name__iexact=item_name)  # Case-insensitive match
-
-    if not items.exists():
-        return Response({"error": "Item not found"}, status=404)
-
-    serializer = ItemSerializer(items, many=True)  # Support multiple matches
-    return Response(serializer.data)  # Return serialized data as JSON
-
-
-
-'''
-@api_view(["POST"])  # Change this to POST if you want to accept POST requests
+# View to save user token
+@api_view(['POST'])
 def tokens(request):
-    token_value = request.data.get("token", None)  # Get token from POST body
+    token = request.data.get('token', None)
+    print(token)
+    if not token:
+        return Response({"error": "Token is required"}, status=400)
 
-    if not token_value:
-        return Response({"error": "Tokens not provided"}, status=400)
+    try:
+        # Save the token to the UserLocation model
+        user_location = finaltokens.objects.create(token=token)
+        
+        return Response({
+            "message": "Token saved successfully",
+            "token": token,
+        })
+    except Exception as e:
+        return Response({"errojdagf avgsdfr": str(e)}, status=100)
 
-    # Assuming 'tokens' is the model where tokens are stored
-    user_token = get_object_or_404(Token, usertokens=token_value)
 
-    return Response({"user_tokens": user_token.usertokens}, status=200)'
-    '''
+
+# View to search for products by name
 @api_view(['GET'])
-def tokens(request):
-    token = request.data.get('token')
-    print(token)  # Debugging
-
-    return Response({"message": "Token processed successfully"})
-
-
-def read_excel_file(request):
-    # Define the path to your manually added Excel file
-    excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'your_file.xlsx')
-    
-    try:
-        # Read the Excel file using pandas
-        df = pd.read_excel(excel_file_path, engine='openpyxl')
-        
-        # Convert the DataFrame to JSON format (as a list of records)
-        data = df.to_dict(orient="records")
-        
-        return JsonResponse({"data": data})  # Send the data as JSON response
-    except Exception as e:
-        return JsonResponse({"error": str(e)})
-    
-
-def import_excel_to_model(request):
-    # Path to the manually added Excel file in your static folder
-    excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'datafile.xlsx')
-
-    try:
-        # Read the Excel file using pandas
-        df = pd.read_excel(excel_file_path, engine='openpyxl')
-        
-        # Iterate through the rows of the DataFrame and save to the model
-        for _, row in df.iterrows():
-            # Create and save a new Product instance for each row
-            Product.objects.create(
-                name=row['Name'],           # Assuming the column in the Excel file is 'Name'
-                description=row['Description'],  # Assuming the column in the Excel file is 'Description'
-                price=row['Price'],         # Assuming the column in the Excel file is 'Price'
-                stock=row['Stock'],         # Assuming the column in the Excel file is 'Stock'
-            )
-        
-        return JsonResponse({"message": "Data imported successfully!"})
-    except Exception as e:
-        return JsonResponse({"error": str(e)})
-    
 def productname(request):
     name = request.GET.get("item_name", None)  # Retrieve item_name from GET request
 
@@ -180,20 +134,19 @@ def productname(request):
 
     serializer = ProductSerializer(items, many=True)  # Support multiple matches
     return Response(serializer.data)
+
+
+# View to list items with optional sorting and filtering
 @api_view(['GET'])
 def items(request):
     name = request.GET.get("query", "").strip()  # Get search query
     sort = request.GET.get("sort", None)  # Get sort parameter
-
-    print(f"Received query: {name}")  # Debugging print
 
     # Filter items based on query (case-insensitive search)
     if name:
         items = Product.objects.filter(name__icontains=name)
     else:
         return Response([], status=200)  # Return empty list if no query is provided
-
-    print(f"Filtered items: {items}")  # Debugging print
 
     # Apply sorting only if sort is provided
     valid_sort_fields = ["name", "-name", "price", "-price", "created_at", "-created_at"]
@@ -203,3 +156,96 @@ def items(request):
     # Serialize and return results
     serializer = ProductSerializer(items, many=True)
     return Response(serializer.data, status=200)
+
+
+# View to read an Excel file and return its data as JSON
+def read_excel_file(request):
+    excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'your_file.xlsx')
+    
+    try:
+        df = pd.read_excel(excel_file_path, engine='openpyxl')
+        data = df.to_dict(orient="records")
+        return JsonResponse({"data": data})
+    except Exception as e:
+        return JsonResponse({"error": str(e)})
+
+
+# View to import data from an Excel file into the Product model
+def import_excel_to_model(request):
+    excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'datafile.xlsx')
+
+    try:
+        df = pd.read_excel(excel_file_path, engine='openpyxl')
+        
+        for _, row in df.iterrows():
+            Product.objects.create(
+                name=row['Name'],
+                description=row['Description'],
+                price=row['Price'],
+                stock=row['Stock'],
+            )
+        
+        return JsonResponse({"message": "Data imported successfully!"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)})
+    
+
+
+def nearbylocations(latitude, longitude, radius_m):
+    stores = Store.objects.all()  # Assuming your store model is named `Store`
+    nearby_stores = []
+    
+    for store in stores:
+        distance = haversine(latitude, longitude, store.latitude, store.longitude)
+        if distance <= radius_m:
+            nearby_stores.append({
+                'store': store,
+                'distance': distance
+            })
+    
+    nearby_stores.sort(key=lambda x: x['distance'])  # Sorting stores by distance
+    return nearby_stores
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371  # Radius of the Earth in kilometers
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    distance_km = R * c  # Distance in kilometers
+    return distance_km * 1000  # Convert to meters
+
+
+def storesdata(request):
+    excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'fileforstores.xlsx')
+    
+    try:
+        # Read the Excel file
+        df = pd.read_excel(excel_file_path, engine='openpyxl')
+        
+        # Iterate through each row in the DataFrame
+        for _, row in df.iterrows():
+            # Create a new Store instance with the correct field names
+            Store.objects.create(
+                store_name=row['Name'],   # Correct field name is 'store_name'
+                address=row['Address'],   # Correct field name is 'address'
+                latitude=row['Latitude'], # Latitude as is
+                longitude=row['Longitude']# Longitude as is
+            )
+        
+        return JsonResponse({"message": "Data imported successfully!"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)})
+
+def name(request):
+    # Query all Store objects
+    stores = Store.objects.all()
+    
+    # Extract the store_name from each store and store it in a list
+    store_names = [store.store_name for store in stores]
+    
+    # Print the store names to the console (for debugging purposes)
+    print(store_names)
+    
+    # Return the store names as an HTTP response (or as a string)
+    return HttpResponse(", ".join(store_names))

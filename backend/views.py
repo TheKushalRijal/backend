@@ -173,50 +173,84 @@ def read_excel_file(request):
         return JsonResponse({"error": str(e)})
 
 
-# View to import data from an Excel file into the Product model
 def import_excel_to_model(request):
     excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'datafile.xlsx')
 
     try:
         df = pd.read_excel(excel_file_path, engine='openpyxl')
         
+        store_name = df['store'].iloc[0]  # Read the store name from the first row (or wherever it's placed)
+
+        # Get or create the store
+        store, created = Store.objects.get_or_create(store_name=store_name)
+
         for _, row in df.iterrows():
             Product.objects.create(
+                store=store,  # Assign the product to the fetched store
                 name=row['Name'],
                 description=row['Description'],
                 price=row['Price'],
                 stock=row['Stock'],
+                image=row['Image'],
+                rating=row['rating'],
+                inStock=row['inStock'],
             )
-        
+
         return JsonResponse({"message": "Data imported successfully!"})
+
     except Exception as e:
         return JsonResponse({"error": str(e)})
     
 
 
-def nearbylocations(latitude, longitude, radius_m):
-    stores = Store.objects.all()  # Assuming your store model is named `Store`
-    nearby_stores = []
+def page(request):
+    return render(request, 'index.html')
+
+
+
     
-    for store in stores:
-        distance = haversine(latitude, longitude, store.latitude, store.longitude)
-        if distance <= radius_m:
-            nearby_stores.append({
-                'store': store,
-                'distance': distance
-            })
+
+
+
+
+def nearbylocations(request):
+    try:
+        latitude = float(request.GET.get('latitude'))
+        longitude = float(request.GET.get('longitude'))
+        radius_m = float(request.GET.get('radius', 1000))  # Default to 1000 meters
+        
+        stores = Store.objects.all()
+        nearby_stores = []
+        
+        for store in stores:
+            distance = haversine(latitude, longitude, store.latitude, store.longitude)
+            if distance <= radius_m:
+                nearby_stores.append({
+                    'store_name': store.store_name,
+                    'address': store.address,
+                    'distance': round(distance, 2),
+                    'latitude': store.latitude,
+                    'longitude': store.longitude,
+                    'image': store.parkings.url if store.parkings else None
+                })
+        
+        nearby_stores.sort(key=lambda x: x['distance'])  # Sorting by nearest first
+        return JsonResponse({'nearby_stores': nearby_stores})
     
-    nearby_stores.sort(key=lambda x: x['distance'])  # Sorting stores by distance
-    return nearby_stores
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 def haversine(lat1, lon1, lat2, lon2):
-    R = 6371  # Radius of the Earth in kilometers
+    R = 6371  # Earth radius in KM
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
     a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distance_km = R * c  # Distance in kilometers
+    distance_km = R * c  # Distance in KM
     return distance_km * 1000  # Convert to meters
+
+
+
 
 
 def storesdata(request):
@@ -241,6 +275,7 @@ def storesdata(request):
         return JsonResponse({"error": str(e)})
 
 def name(request):
+
     # Query all Store objects
     stores = Store.objects.all()
     
@@ -253,6 +288,7 @@ def name(request):
     # Return the store names as an HTTP response (or as a string)
     return HttpResponse(", ".join(store_names))
 
+<<<<<<< HEAD
 def base(request):
     return render(request, 'base.html')
 
@@ -283,3 +319,8 @@ def gas(request):
 
 def menu(request):
     return render(request, 'menu.html')
+=======
+
+# code for database of stores
+#def storesrelation(request):
+>>>>>>> main

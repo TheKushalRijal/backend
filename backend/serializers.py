@@ -21,7 +21,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product  # Specifies that this serializer is for the Product model
-        fields = ['id', 'name', 'description', 'price', 'stock', 'rating']  # Fields to include in JSON
+        fields = ['id', 'name', 'description', 'price', 'stock','image', 'rating','inStock','store']  # Fields to include in JSON
 
     def to_representation(self, instance):
         data = super().to_representation(instance)  

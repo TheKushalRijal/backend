@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ItemViewSet,location,tokens,items,nearbylocations,page,import_excel_to_model # Ensure views is imported correctly
+from .views import ItemViewSet,location,tokens,items,nearbylocations,page,import_excel_to_model,RegisterView,LoginView # Ensure views is imported correctly
 from . import views
 
 
@@ -26,4 +26,16 @@ urlpatterns = [
     path('backend/nameitems/', views.items, name='items'),  # Updated the path to 'nameitems/'
 
 
+
+   
+    # Custom URLs
+    path('dashboard/', views.login_required, name='dashboard'),
+    path('backend/register/', RegisterView.as_view(), name='register'),
+    path('backend/login/', LoginView.as_view(), name='login'),
+    path('home/', views.home, name='home'),
+
+    path('base/', views.base, name='base'),
+    path('search/', views.search, name='search'),  # Fixed typo: 'serach' -> 'search'
+    path('gas/', views.gas, name='gas'),
+    path('menu/', views.menu, name='menu'),
 ]

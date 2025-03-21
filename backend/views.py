@@ -1,16 +1,82 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view
-from .models import Item, UserLocation, Product,finaltokens,Store
-from .serializers import ItemSerializer, ProductSerializer
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.conf import settings
+from django.contrib.auth import get_user_model, login, logout, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib import messages
+from django.urls import reverse_lazy
+from allauth.account.forms import LoginForm, SignupForm
+from allauth.account.views import SignupView, LoginView, PasswordResetView
 import pandas as pd
 import os
-from django.conf import settings
-from django.contrib.auth.models import User
 import math
+from .forms import StoreSearchForm
+
+from .models import Item, UserLocation, Product, Store, CustomUser, finaltokens
+from .serializers import (
+    ItemSerializer, ProductSerializer, UserSerializer, LoginSerializer
+)
+
+User = get_user_model()
+
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+
+            return Response({
+                'user': serializer.data,
+                'refresh': str(refresh),
+                'access': access_token,
+            }, status=status.HTTP_201_CREATED)
+        
+        # DEBUG: Print errors
+        print("Serializer Errors:", serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    def post(self, request):
+        # Validate the incoming data using the LoginSerializer
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            # Extract email and password from the validated data
+            email = serializer.validated_data['email']
+            password = serializer.validated_data['password']
+
+            # Authenticate the user
+            user = authenticate(request, email=email, password=password)
+
+            if user:
+                # If authentication is successful, generate JWT tokens
+                refresh = RefreshToken.for_user(user)
+                access_token = str(refresh.access_token)
+
+                # Return the tokens in the response
+                return Response({
+                    'refresh': str(refresh),
+                    'access': access_token,
+                }, status=status.HTTP_200_OK)
+            
+            # If authentication fails, return an error
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        # If the data is invalid, return the errors
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 
 
 # ItemViewSet remains unchanged
@@ -284,6 +350,74 @@ def name(request):
     
     # Return the store names as an HTTP response (or as a string)
     return HttpResponse(", ".join(store_names))
+
+
+
+def storesdata(request):
+    excel_file_path = os.path.join(settings.BASE_DIR, 'backend', 'static', 'excel_files', 'fileforstores.xlsx')
+    
+    try:
+        # Read the Excel file
+        df = pd.read_excel(excel_file_path, engine='openpyxl')
+        
+        # Iterate through each row in the DataFrame
+        for _, row in df.iterrows():
+            # Create a new Store instance with the correct field names
+            Store.objects.create(
+                store_name=row['Name'],   # Correct field name is 'store_name'
+                address=row['Address'],   # Correct field name is 'address'
+                latitude=row['Latitude'], # Latitude as is
+                longitude=row['Longitude']# Longitude as is
+            )
+        
+        return JsonResponse({"message": "Data imported successfully!"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)})
+
+def name(request):
+
+    # Query all Store objects
+    stores = Store.objects.all()
+    
+    # Extract the store_name from each store and store it in a list
+    store_names = [store.store_name for store in stores]
+    
+    # Print the store names to the console (for debugging purposes)
+    print(store_names)
+    
+    # Return the store names as an HTTP response (or as a string)
+    return HttpResponse(", ".join(store_names))
+
+def base(request):
+    return render(request, 'base.html')
+
+
+def home(request):
+
+    stores = Store.objects.all() # Gets all the stores from database
+
+    return render(request, 'home.html', {'stores': stores})
+
+
+def search(request):
+
+    form = StoreSearchForm(request.GET)
+    stores = []
+
+    if form.is_valid():
+        query = form.cleaned_data['query']
+        if query:
+            stores = Store.objects.filter(store_name__icontains=query)
+
+            
+
+    return render(request, 'search.html', {'form': form, 'stores': stores})
+
+def gas(request):
+    return render(request, 'gas.html')
+
+def menu(request):
+    return render(request, 'menu.html')
 
 
 # code for database of stores

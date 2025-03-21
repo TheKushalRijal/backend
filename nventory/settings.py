@@ -51,9 +51,16 @@ INSTALLED_APPS = [
     "backend",
     'rest_framework', 
     'corsheaders',
+    'django.contrib.sites',
+
+    'rest_framework_simplejwt',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 ]
 
 MIDDLEWARE = [
+   'corsheaders.middleware.CorsMiddleware',  # Ensure this is at the top
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,7 +68,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # Add this line
+    'allauth.account.middleware.AccountMiddleware',
 
 ]
 
@@ -138,9 +145,32 @@ STATICFILES_DIRS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+SITE_ID = 1 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default backend
+    'allauth.account.auth_backends.AuthenticationBackend',  # Allauth backend
+]
+# Email verification settings
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # Require email verification
+ACCOUNT_EMAIL_REQUIRED = True  # Make email a required field
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Use email for authentication instead of username
+ACCOUNT_UNIQUE_EMAIL = True  # Ensure emails are unique
+# For development: Print emails to the console
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+
 
 
 

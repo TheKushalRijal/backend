@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User  # Django's built-in User model
 #from views import userlocations
@@ -20,7 +20,7 @@ class Item(models.Model):
     
     name = models.CharField(max_length=255,blank = True)  # Consider removing if title is enough
     title = models.CharField(max_length=255, null=True, blank=True)
-    Store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True)
+   # Store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True)
     title = models.CharField(max_length=255,null=True)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, blank=True)
@@ -52,8 +52,7 @@ class ExcelFile(models.Model):
 
 
 class Product(models.Model):
-    store = models.ForeignKey(Store, related_name='products', on_delete=models.CASCADE)  # Link to Store model
-
+    store = models.CharField(max_length=100,default=0.0)
     name = models.CharField(max_length=100)
     description = models.TextField(null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2,null=True)
@@ -66,4 +65,34 @@ class Product(models.Model):
     
 class finaltokens(models.Model):
     token = models.CharField(max_length=100)
+
+
+
+class CustomUser(AbstractUser):
+    username = None  # Remove the username field
+    email = models.EmailField(('email address'), unique=True)  # Use email as the unique identifier
+
+    USERNAME_FIELD = 'email'  # Set email as the USERNAME_FIELD
+    REQUIRED_FIELDS = []  # No additional fields are required
+
+    # Add custom related_name to avoid clashes
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        related_name="customuser_groups",  # Custom related_name
+        related_query_name="customuser",
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name="customuser_permissions",  # Custom related_name
+        related_query_name="customuser",
+    )
+
+    def __str__(self):
+        return self.email
 

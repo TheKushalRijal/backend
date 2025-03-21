@@ -11,6 +11,9 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User
 import math
+from django.shortcuts import redirect
+from .models import Store
+from .forms import StoreSearchForm
 
 
 # ItemViewSet remains unchanged
@@ -249,3 +252,34 @@ def name(request):
     
     # Return the store names as an HTTP response (or as a string)
     return HttpResponse(", ".join(store_names))
+
+def base(request):
+    return render(request, 'base.html')
+
+
+def home(request):
+
+    stores = Store.objects.all() # Gets all the stores from database
+
+    return render(request, 'home.html', {'stores': stores})
+
+
+def serach(request):
+
+    form = StoreSearchForm(request.GET)
+    stores = []
+
+    if form.is_valid():
+        query = form.cleaned_data['query']
+        if query:
+            stores = Store.objects.filter(store_name__icontains=query)
+
+            
+
+    return render(request, 'search.html', {'form': form, 'stores': stores})
+
+def gas(request):
+    return render(request, 'gas.html')
+
+def menu(request):
+    return render(request, 'menu.html')

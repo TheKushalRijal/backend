@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %} Home {% endblock %}
+
+{% block content %}
+    <P>This is the home page.</P>
+
+    <h1>Stores</h1>
+
+    <ul>
+        {% for store in stores %}
+            <li>
+                <strong>{{ store.store_name }}</strong><br>
+                Address: {{ store.address }}<br>
+                Latitude: {{ store.latitude }}<br>
+                Longitude: {{ store.longitude }}<br>
+            </li>
+        {% empty %}
+            <li>No stores available.</li>
+        {% endfor %}
+    </ul>
+
+
+{% endblock %}
+
+

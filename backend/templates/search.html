@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %} Search {% endblock %}
+
+{% block content %}
+    <p>This page will allow user to search any products or stores.</p>
+
+    <form method="GET" action="{% url 'search' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Search</button>
+    </form>
+    
+    {% if stores %}
+    <ul>
+        {% for store in stores %}
+            <li>{{ store.store_name }} - {{ store.address }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No stores found matching your search.</p>
+{% endif %}
+{% endblock %}

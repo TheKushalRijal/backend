@@ -1,7 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ItemViewSet,location,tokens,items # Ensure views is imported correctly
 from . import views
+from .views import base, ItemViewSet
+from django.views.generic import TemplateView
 
 
 
@@ -12,7 +13,7 @@ urlpatterns = [
     
     path('backend/', include(router.urls)),
     path('backend/location/', views.location, name='location'),
-    path('',views.name,name='name'),
+    path('',views.home, name='home'),
     path('tokens/', views.tokens, name='tokens'),  # Ensure it's POST request here
     path('storesdata/', views.storesdata, name='storesdata'),  # Ensure it's POST request here
 
@@ -21,6 +22,9 @@ urlpatterns = [
     path('import-excel/', views.import_excel_to_model, name='import_excel_to_model'),
     path('backend/nameitems/', views.items, name='items'),  # Updated the path to 'nameitems/'
 
-
-
+    path('base/', views.base, name='base'),
+    path('search/', views.serach, name='search'),
+    path('gas/', views.gas, name='gas'),
+    path('menu/', views.menu, name='menu'),
+ 
 ]
